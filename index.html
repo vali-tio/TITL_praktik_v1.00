@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ujian Praktik Troubleshooting TITL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none !important; }
+        .btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: bold; cursor: pointer; text-align: center; }
+        .btn-blue { background-color: #3b82f6; color: white; }
+        .btn-red { background-color: #ef4444; color: white; }
+        .btn-green { background-color: #10b981; color: white; }
+        .btn-gray { background-color: #6b7280; color: white; }
+        .lamp-on { background-color: #22c55e; box-shadow: 0 0 15px #22c55e; }
+        .lamp-off { background-color: #ef4444; }
+    </style>
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- HEADER -->
+    <header class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">🛠️ Praktik TITL 2026</h1>
+        <button onclick="loginAdmin()" class="text-xs bg-blue-800 px-2 py-1 rounded">Admin / Guru</button>
+    </header>
+
+    <div class="max-w-md mx-auto p-4" id="app-container">
+        
+        <!-- SECTION 1: LOGIN SISWA -->
+        <div id="section-login" class="bg-white p-6 rounded-lg shadow-md mb-4">
+            <h2 class="text-lg font-bold mb-4 border-b pb-2">Identitas Siswa</h2>
+            <input type="text" id="siswa-nama" placeholder="Nama Lengkap" class="w-full border p-2 mb-3 rounded">
+            <input type="text" id="siswa-kelas" placeholder="Kelas (Contoh: XII TITL 1)" class="w-full border p-2 mb-3 rounded">
+            <button onclick="mulaiUjian()" class="btn btn-blue w-full">Mulai Ujian</button>
+        </div>
+
+        <!-- SECTION: ADMIN PANEL -->
+        <div id="section-admin" class="bg-yellow-100 p-6 rounded-lg shadow-md mb-4 hidden border-2 border-yellow-400">
+            <h2 class="text-lg font-bold text-yellow-800 mb-2">Panel Guru (Admin)</h2>
+            
+            <p class="text-sm font-bold mb-1">1. Skenario Kerusakan Ujian:</p>
+            <select id="admin-fault" class="w-full p-2 border rounded mb-3 bg-white text-sm">
+                <option value="pln">Sumber Utama PLN / Kabel Fasa Tiang Putus</option>
+                <option value="mcb">MCB Utama Trip / Rusak (Output 0V)</option>
+                <option value="saklar">Kontak Saklar Rusak (Internal Kontak Open)</option>
+                <option value="kabel">Kabel Fasa Putus di Jalur</option>
+                <option value="lampu">Beban / Lampu Putus / Korslet</option>
+            </select>
+            <button onclick="simpanKerusakan()" class="btn btn-green w-full mb-3 text-sm">Simpan Kerusakan</button>
+            
+            <hr class="border-yellow-300 mb-3">
+
+            <p class="text-sm font-bold mb-1">2. Nomor WhatsApp Guru (Format: 628xxxxxxxxxx):</p>
+            <input type="text" id="admin-wa" placeholder="Contoh: 6281234567890" class="w-full border p-2 mb-2 rounded bg-white text-sm">
+            <button onclick="simpanNoWA()" class="btn btn-green w-full mb-3 text-sm">Simpan No. WhatsApp</button>
+
+            <hr class="border-yellow-300 mb-3">
+            
+            <p class="text-sm font-bold mb-1">3. Tambah Soal Teori Baru:</p>
+            <input type="text" id="new-soal-text" placeholder="Pertanyaan Soal..." class="w-full border p-2 mb-2 rounded bg-white text-sm">
+            <input type="text" id="new-soal-opsi" placeholder="Opsi Pilihan (Pisahkan dengan koma)" class="w-full border p-2 mb-2 rounded bg-white text-sm">
+            <input type="number" id="new-soal-kunci" placeholder="Indeks Kunci Jawaban (0, 1, atau 2)" class="w-full border p-2 mb-3 rounded bg-white text-sm">
+            <button onclick="tambahSoalBaru()" class="btn btn-blue w-full mb-3 text-sm">Tambah ke Bank Soal</button>
+            
+            <div id="list-soal-admin" class="text-xs mb-3 bg-white p-2 border rounded max-h-32 overflow-y-auto"></div>
+            <button onclick="resetSoalDefault()" class="btn btn-gray w-full mb-4 text-xs">Reset Soal ke Default</button>
+
+            <hr class="border-yellow-300 mb-3">
+
+            <p class="text-sm font-bold mb-1">4. Ganti Password Admin:</p>
+            <input type="password" id="old-pass" placeholder="Password Lama" class="w-full border p-2 mb-2 rounded bg-white text-sm">
+            <input type="password" id="new-pass" placeholder="Password Baru" class="w-full border p-2 mb-3 rounded bg-white text-sm">
+            <button onclick="ubahPasswordAdmin()" class="btn btn-blue w-full mb-2 text-sm">Update Password</button>
+            <button onclick="tutupAdmin()" class="btn btn-red w-full text-sm">Tutup Panel</button>
+        </div>
+
+        <!-- SECTION 2: SOAL TEORI PRAKTIK -->
+        <div id="section-teori" class="bg-white p-6 rounded-lg shadow-md mb-4 hidden">
+            <h2 class="text-lg font-bold mb-4 border-b pb-2">Tahap 1: Teori Instalasi</h2>
+            <div id="container-soal" class="space-y-4 mb-4"></div>
+            <button onclick="lanjutPraktik()" class="btn btn-blue w-full">Simpan & Lanjut ke Praktik</button>
+        </div>
+
+        <!-- SECTION 3: SIMULASI PRAKTIK INTERAKTIF & PERBAIKAN -->
+        <div id="section-praktik" class="bg-white p-4 rounded-lg shadow-md mb-4 hidden">
+            <h2 class="text-lg font-bold mb-2 border-b pb-2">Tahap 2: Simulasi, Pengukuran & Perbaikan</h2>
+            <p class="text-xs text-gray-600 mb-3">Ukur sistem, analisis kerusakan, lalu eksekusi penggantian alat. Amati perubahan lampu pada panel!</p>
+            
+            <!-- Panel Status Visual Komponen & Beban Lampu -->
+            <div class="bg-gray-50 p-3 rounded border mb-3 space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs font-bold text-gray-700">Status Komponen & Beban:</p>
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs font-semibold">Lampu Beban:</span>
+                        <div id="indicator-lampu" class="w-4 h-4 rounded-full lamp-off inline-block"></div>
+                        <span id="text-lampu-status" class="text-xs font-bold text-red-600">PADAM</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-status-mcb" onclick="toggleMCB()" class="btn btn-gray text-xs">MCB: OFF</button>
+                    <button id="btn-status-saklar" onclick="toggleSaklar()" class="btn btn-gray text-xs">Saklar: OFF</button>
+                </div>
+            </div>
+
+            <!-- Panel Pengukuran Multimeter Objektif -->
+            <div class="bg-blue-50 p-3 rounded border border-blue-200 mb-3">
+                <p class="text-xs font-bold text-blue-900 mb-1">Pilih Titik Ukur Multimeter ($L$ vs $N$):</p>
+                <select id="dropdown-ukur" onchange="lakukanPengukuran()" class="w-full border p-2 text-sm rounded bg-white">
+                    <option value="">-- Pilih Titik Ukur ($L$ - $N$) --</option>
+                    <option value="pln">Ukur Sumber Fasa PLN dari Tiang</option>
+                    <option value="mcb">Ukur Output MCB</option>
+                    <option value="saklar">Ukur Terminal Masuk & Keluar Saklar</option>
+                    <option value="kabel">Ukur Jalur Kabel Penghantar Tengah</option>
+                    <option value="lampu">Ukur Terminal Beban Lampu</option>
+                </select>
+            </div>
+
+            <!-- Layar Multimeter Digital Virtual -->
+            <div class="bg-gray-800 text-green-400 p-3 rounded text-center text-xl font-mono mb-3 border-4 border-gray-600">
+                Layar Multimeter: <br> <span id="display-multi">00.0 V</span>
+            </div>
+
+            <!-- Panel Kesimpulan & Eksekusi Perbaikan -->
+            <div class="border-t pt-3">
+                <p class="text-xs font-bold mb-1">3. Diagnosis & Eksekusi Perbaikan Alat:</p>
+                
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Diagnosis Titik Kerusakan:</label>
+                <select id="dropdown-perbaikan" class="w-full border p-2 text-sm rounded mb-2 bg-white">
+                    <option value="">-- Pilih Jenis Kerusakan --</option>
+                    <option value="pln">Sumber Fasa PLN dari Tiang Putus</option>
+                    <option value="mcb">MCB Utama Rusak / Trip</option>
+                    <option value="saklar">Kontak Saklar Rusak</option>
+                    <option value="kabel">Kabel Fasa Putus</option>
+                    <option value="lampu">Beban / Lampu Putus</option>
+                </select>
+
+                <label class="text-xs font-semibold text-gray-600 mb-1 block">Tindakan Eksekusi Perbaikan Fisik:</label>
+                <select id="dropdown-aksi" class="w-full border p-2 text-sm rounded mb-3 bg-white">
+                    <option value="">-- Pilih Aksi Perbaikan Alat --</option>
+                    <option value="pln">Sambung / Perbaiki Kabel Jaringan PLN Tiang</option>
+                    <option value="mcb">Ganti / Reset MCB Utama Baru</option>
+                    <option value="saklar">Ganti Saklar Baru</option>
+                    <option value="kabel">Ganti Jalur Kabel Fasa Baru</option>
+                    <option value="lampu">Ganti Bohlam Lampu Baru</option>
+                </select>
+
+                <button onclick="submitPerbaikan()" class="btn btn-green w-full text-sm mb-2">Eksekusi Perbaikan Alat</button>
+                <button onclick="lihatLaporan()" id="btn-lihat-laporan" class="btn btn-blue w-full text-sm hidden">Lihat Laporan & Kirim ke Guru</button>
+            </div>
+        </div>
+
+        <!-- SECTION 4: LAPORAN -->
+        <div id="section-laporan" class="bg-white p-6 rounded-lg shadow-md mb-4 hidden">
+            <h2 class="text-lg font-bold mb-4 border-b pb-2">Laporan Hasil Praktik</h2>
+            <div id="isi-laporan" class="text-sm mb-4 bg-gray-50 p-3 border rounded"></div>
+            <button onclick="kirimWA()" class="btn btn-green w-full flex items-center justify-center gap-2">
+                <span>💬 Kirim Hasil ke WhatsApp Guru</span>
+            </button>
+        </div>
+
+    </div>
+      <footer id="donateFooter">
+    <span>Gratis untuk semua</span>
+    <a href="https://saweria.co/valitio" target="_blank" rel="noopener noreferrer">
+      💝 Dukung via Saweria
+    </a>
+  </footer>
+
+    <script>
+        const defaultSoal = [
+            {
+                tanya: "1. Jika pengukuran pada sumber kabel Fasa PLN dari tiang bernilai 0 Volt padahal kWh meter normal, kemungkinan besar gangguan berasal dari...",
+                opsi: ["Beban lampu putus", "Saklar rusak", "Kabel Fasa utama dari tiang / sambungan PLN terputus"],
+                kunci: 2
+            },
+            {
+                tanya: "2. Urutan logis troubleshooting dari hulu paling awal adalah...",
+                opsi: ["Beban -> Saklar -> MCB -> Sumber PLN", "Sumber PLN (Tiang) -> MCB -> Saklar -> Beban (Lampu)", "Saklar -> Beban -> Sumber PLN -> MCB"],
+                kunci: 1
+            }
+        ];
+
+        if(!localStorage.getItem('titl_admin_pin')) localStorage.setItem('titl_admin_pin', '1234');
+        if(!localStorage.getItem('titl_kerusakan')) localStorage.setItem('titl_kerusakan', 'lampu');
+        if(!localStorage.getItem('titl_no_wa')) localStorage.setItem('titl_no_wa', '6281234567890');
+        if(!localStorage.getItem('titl_bank_soal')) {
+            localStorage.setItem('titl_bank_soal', JSON.stringify(defaultSoal));
+        }
+
+        let namaSiswa = "";
+        let kelasSiswa = "";
+        let skorTeori = 0;
+        let statusMCB = false;      
+        let statusSaklar = false;   
+        let sistemNormal = false;   
+        let riwayatUkur = [];
+        let hasilAkhir = "";
+
+        function loginAdmin() {
+            let currentPin = localStorage.getItem('titl_admin_pin');
+            let pin = prompt("Masukkan PIN Guru (Admin):");
+            if (pin === currentPin) {
+                document.getElementById('section-admin').classList.remove('hidden');
+                document.getElementById('admin-fault').value = localStorage.getItem('titl_kerusakan');
+                document.getElementById('admin-wa').value = localStorage.getItem('titl_no_wa');
+                renderListSoalAdmin();
+            } else if(pin !== null) {
+                alert("PIN Salah!");
+            }
+        }
+
+        function simpanNoWA() {
+            let noWa = document.getElementById('admin-wa').value.trim();
+            if(!noWa) return alert("Nomor WhatsApp tidak boleh kosong!");
+            localStorage.setItem('titl_no_wa', noWa);
+            alert("Nomor WhatsApp Guru berhasil disimpan!");
+        }
+
+        function ubahPasswordAdmin() {
+            let oldInput = document.getElementById('old-pass').value;
+            let newInput = document.getElementById('new-pass').value;
+            let currentPin = localStorage.getItem('titl_admin_pin');
+
+            if(!oldInput || !newInput) return alert("Harap isi Password Lama dan Baru!");
+            if(oldInput !== currentPin) return alert("Password lama tidak sesuai!");
+
+            localStorage.setItem('titl_admin_pin', newInput);
+            alert("Password Admin berhasil diubah!");
+            document.getElementById('old-pass').value = "";
+            document.getElementById('new-pass').value = "";
+        }
+
+        function simpanKerusakan() {
+            let fault = document.getElementById('admin-fault').value;
+            localStorage.setItem('titl_kerusakan', fault);
+            alert("Kerusakan ujian berhasil disimpan!");
+        }
+
+        function tambahSoalBaru() {
+            let tanya = document.getElementById('new-soal-text').value;
+            let opsiStr = document.getElementById('new-soal-opsi').value;
+            let kunci = parseInt(document.getElementById('new-soal-kunci').value);
+
+            if(!tanya || !opsiStr || isNaN(kunci)) {
+                alert("Harap lengkapi semua kolom penambahan soal dengan benar!");
+                return;
+            }
+
+            let opsiArr = opsiStr.split(',').map(item => item.trim());
+            let bankSoal = JSON.parse(localStorage.getItem('titl_bank_soal'));
+
+            bankSoal.push({ tanya, opsi: opsiArr, kunci });
+            localStorage.setItem('titl_bank_soal', JSON.stringify(bankSoal));
+
+            alert("Soal baru berhasil ditambahkan!");
+            document.getElementById('new-soal-text').value = "";
+            document.getElementById('new-soal-opsi').value = "";
+            document.getElementById('new-soal-kunci').value = "";
+            renderListSoalAdmin();
+        }
+
+        function renderListSoalAdmin() {
+            let bankSoal = JSON.parse(localStorage.getItem('titl_bank_soal'));
+            let container = document.getElementById('list-soal-admin');
+            container.innerHTML = `<strong>Daftar Soal Aktif (${bankSoal.length}):</strong><br>`;
+            bankSoal.forEach((s, index) => {
+                container.innerHTML += `${index + 1}. ${s.tanya} <button onclick="hapusSoal(${index})" style="color:red; font-weight:bold;">[Hapus]</button><br>`;
+            });
+        }
+
+        function hapusSoal(index) {
+            let bankSoal = JSON.parse(localStorage.getItem('titl_bank_soal'));
+            if(bankSoal.length <= 1) {
+                alert("Minimal harus ada 1 soal dalam bank soal!");
+                return;
+            }
+            bankSoal.splice(index, 1);
+            localStorage.setItem('titl_bank_soal', JSON.stringify(bankSoal));
+            renderListSoalAdmin();
+        }
+
+        function resetSoalDefault() {
+            if(confirm("Kembalikan soal ke pengaturan awal?")) {
+                localStorage.setItem('titl_bank_soal', JSON.stringify(defaultSoal));
+                renderListSoalAdmin();
+                alert("Soal berhasil direset ke default.");
+            }
+        }
+
+        function tutupAdmin() {
+            document.getElementById('section-admin').classList.add('hidden');
+        }
+
+        function showSection(id) {
+            ['section-login', 'section-teori', 'section-praktik', 'section-laporan'].forEach(sec => {
+                document.getElementById(sec).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function mulaiUjian() {
+            namaSiswa = document.getElementById('siswa-nama').value;
+            kelasSiswa = document.getElementById('siswa-kelas').value;
+            if(!namaSiswa || !kelasSiswa) return alert("Mohon isi Nama dan Kelas terlebih dahulu!");
+            
+            muatSoalSiswa();
+            showSection('section-teori');
+        }
+
+        function muatSoalSiswa() {
+            let bankSoal = JSON.parse(localStorage.getItem('titl_bank_soal'));
+            let container = document.getElementById('container-soal');
+            container.innerHTML = "";
+
+            bankSoal.forEach((s, index) => {
+                let htmlOpsi = `<option value="">-- Pilih Jawaban --</option>`;
+                s.opsi.forEach((opt, oIndex) => {
+                    let statusJawaban = (oIndex === s.kunci) ? "benar" : "salah";
+                    htmlOpsi += `<option value="${statusJawaban}">${opt}</option>`;
+                });
+
+                container.innerHTML += `
+                    <div class="mb-4">
+                        <p class="text-sm font-semibold mb-1">${s.tanya}</p>
+                        <select id="soal-${index}" class="w-full border p-2 rounded bg-white text-sm">
+                            ${htmlOpsi}
+                        </select>
+                    </div>
+                `;
+            });
+        }
+
+        function lanjutPraktik() {
+            let bankSoal = JSON.parse(localStorage.getItem('titl_bank_soal'));
+            let totalSoal = bankSoal.length;
+            let jawabanBenar = 0;
+
+            for(let i = 0; i < totalSoal; i++) {
+                let val = document.getElementById(`soal-${i}`).value;
+                if(!val) {
+                    alert(`Harap jawab semua soal pada nomor ${i + 1}!`);
+                    return;
+                }
+                if(val === 'benar') jawabanBenar++;
+            }
+
+            skorTeori = Math.round((jawabanBenar / totalSoal) * 100);
+            showSection('section-praktik');
+        }
+
+        function updateStatusLampuBeban() {
+            let kerusakan = localStorage.getItem('titl_kerusakan');
+            let indLampu = document.getElementById('indicator-lampu');
+            let txtLampu = document.getElementById('text-lampu-status');
+
+            let kondisiNormal = statusMCB && statusSaklar;
+            let adaKerusakan = !sistemNormal && (kerusakan === 'pln' || kerusakan === 'mcb' || kerusakan === 'saklar' || kerusakan === 'kabel' || kerusakan === 'lampu');
+
+            if (kondisiNormal && !adaKerusakan) {
+                indLampu.className = "w-4 h-4 rounded-full lamp-on inline-block";
+                txtLampu.innerText = "MENYALA (Normal ✨)";
+                txtLampu.className = "text-xs font-bold text-green-600";
+            } else {
+                indLampu.className = "w-4 h-4 rounded-full lamp-off inline-block";
+                txtLampu.innerText = "PADAM / MATI";
+                txtLampu.className = "text-xs font-bold text-red-600";
+            }
+        }
+
+        function toggleMCB() {
+            statusMCB = !statusMCB;
+            let btn = document.getElementById('btn-status-mcb');
+            if(statusMCB) {
+                btn.innerText = "MCB: ON";
+                btn.className = "btn btn-green text-xs";
+            } else {
+                btn.innerText = "MCB: OFF";
+                btn.className = "btn btn-gray text-xs";
+                statusSaklar = false;
+                let sBtn = document.getElementById('btn-status-saklar');
+                sBtn.innerText = "Saklar: OFF";
+                sBtn.className = "btn btn-gray text-xs";
+            }
+            updateStatusLampuBeban();
+        }
+
+        function toggleSaklar() {
+            if(!statusMCB) {
+                alert("Tidak bisa menghidupkan saklar karena MCB Utama masih posisi OFF!");
+                return;
+            }
+            statusSaklar = !statusSaklar;
+            let btn = document.getElementById('btn-status-saklar');
+            if(statusSaklar) {
+                btn.innerText = "Saklar: ON";
+                btn.className = "btn btn-green text-xs";
+            } else {
+                btn.innerText = "Saklar: OFF";
+                btn.className = "btn btn-gray text-xs";
+            }
+            updateStatusLampuBeban();
+        }
+
+        function lakukanPengukuran() {
+            let pilihan = document.getElementById('dropdown-ukur').value;
+            let kerusakan = localStorage.getItem('titl_kerusakan');
+            let display = document.getElementById('display-multi');
+
+            if(!pilihan) return;
+            if(!riwayatUkur.includes(pilihan)) riwayatUkur.push(pilihan);
+
+            let adaKerusakan = !sistemNormal && (kerusakan === 'pln' || kerusakan === 'mcb' || kerusakan === 'saklar' || kerusakan === 'kabel' || kerusakan === 'lampu');
+
+            if(pilihan === 'pln') {
+                display.innerText = (adaKerusakan && kerusakan === 'pln') ? "00.0 V" : "220.5 V";
+            }
+            else if(pilihan === 'mcb') {
+                display.innerText = (adaKerusakan && (kerusakan === 'pln' || kerusakan === 'mcb')) ? "00.0 V" : "220.5 V";
+            } 
+            else if(pilihan === 'saklar') {
+                if(adaKerusakan && (kerusakan === 'pln' || kerusakan === 'mcb')) {
+                    display.innerText = "00.0 V";
+                } else if(adaKerusakan && kerusakan === 'saklar') {
+                    display.innerText = "00.0 V";
+                } else {
+                    display.innerText = statusSaklar ? "220.5 V" : "00.0 V (Off)";
+                }
+            }
+            else if(pilihan === 'kabel') {
+                display.innerText = adaKerusakan ? "00.0 V" : (statusSaklar ? "220.5 V" : "00.0 V");
+            }
+            else if(pilihan === 'lampu') {
+                if(adaKerusakan && kerusakan === 'lampu') {
+                    display.innerText = "220.5 V (Open Load)";
+                } else if(adaKerusakan) {
+                    display.innerText = "00.0 V";
+                } else {
+                    display.innerText = statusSaklar ? "220.5 V" : "00.0 V";
+                }
+            }
+        }
+
+        function submitPerbaikan() {
+            let jawabanSiswa = document.getElementById('dropdown-perbaikan').value;
+            let aksiSiswa = document.getElementById('dropdown-aksi').value;
+            let kerusakanGuru = localStorage.getItem('titl_kerusakan');
+
+            if(!jawabanSiswa || !aksiSiswa) {
+                alert("Harap lengkapi Diagnosis Kerusakan dan Tindakan Eksekusi Perbaikan!");
+                return;
+            }
+
+            let sesuaiSOP = (riwayatUkur.length >= 2);
+            let catatanSOP = sesuaiSOP ? "Sistematis (Sesuai SOP)" : "Kurang Sistematis";
+
+            if(jawabanSiswa === kerusakanGuru && aksiSiswa === kerusakanGuru) {
+                // Perbaikan benar: Aktifkan sistem normal, nyalakan otomatis MCB & Saklar agar lampu menyala di layar
+                sistemNormal = true;
+                statusMCB = true;
+                statusSaklar = true;
+
+                let mcbBtn = document.getElementById('btn-status-mcb');
+                mcbBtn.innerText = "MCB: ON";
+                mcbBtn.className = "btn btn-green text-xs";
+                
+                let sakBtn = document.getElementById('btn-status-saklar');
+                sakBtn.innerText = "Saklar: ON";
+                sakBtn.className = "btn btn-green text-xs";
+
+                updateStatusLampuBeban();
+
+                alert("✅ PERBAIKAN BERHASIL! Komponen telah diganti/diperbaiki. Silakan cek panel simulasi: Lampu beban kini menyala normal! Tekan tombol 'Lihat Laporan' di bawah.");
+                
+                hasilAkhir = `LULUS - Analisis & Perbaikan Benar (${catatanSOP}) - Sistem Pulih Normal`;
+                
+                // Munculkan tombol untuk lanjut ke laporan
+                document.getElementById('btn-lihat-laporan').classList.remove('hidden');
+            } else {
+                alert("❌ GAGAL! Analisis diagnosis atau tindakan eksekusi perbaikan alat belum tepat.");
+                hasilAkhir = `GAGAL - Analisis / Perbaikan Keliru (${catatanSOP})`;
+                sistemNormal = false;
+                updateStatusLampuBeban();
+                document.getElementById('btn-lihat-laporan').classList.remove('hidden');
+            }
+        }
+
+        function lihatLaporan() {
+            let lap = document.getElementById('isi-laporan');
+            lap.innerHTML = `
+                <strong>Nama Siswa:</strong> ${namaSiswa} <br>
+                <strong>Kelas:</strong> ${kelasSiswa} <br>
+                <strong>Skor Teori:</strong> ${skorTeori}/100 <br>
+                <strong>Status Praktik & Aksi:</strong> ${hasilAkhir} <br>
+                <strong>Kondisi Akhir Alat:</strong> ${sistemNormal ? 'Normal / Menyala ✨' : 'Belum Berfungsi (Gagal)'} <br>
+                <strong>Jejak Ukur:</strong> ${riwayatUkur.join(' ➔ ') || 'Tidak Ada Pengukuran'}
+            `;
+            showSection('section-laporan');
+        }
+
+        function kirimWA() {
+            let noGuruWA = localStorage.getItem('titl_no_wa') || "6281234567890";
+            
+            let teksWAGuru = `*LAPORAN HASIL UJIAN PRAKTIK TITL*%0A%0A`;
+            teksWAGuru += `*Nama:* ${namaSiswa}%0A`;
+            teksWAGuru += `*Kelas:* ${kelasSiswa}%0A`;
+            teksWAGuru += `*Nilai Teori:* ${skorTeori}/100%0A`;
+            teksWAGuru += `*Hasil Praktik & Aksi:* ${hasilAkhir}%0A`;
+            teksWAGuru += `*Kondisi Akhir:* ${sistemNormal ? 'Normal (Lampu Menyala)' : 'Gagal'}%0A`;
+            teksWAGuru += `*Jejak Ukur:* ${riwayatUkur.join(' -> ')}%0A`;
+            teksWAGuru += `%0A_Laporan dikirim otomatis via web ujian praktik._`;
+
+            window.open(`https://wa.me/${noGuruWA}?text=${teksWAGuru}`, '_blank');
+        }
+    </script>
+    <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registered"))
+        .catch(err => console.error("SW registration failed:", err));
+    }
+  </script>
+</body>
+</html>
